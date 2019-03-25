@@ -134,11 +134,11 @@ if __name__ == '__main__':
     # train_neural = NeuralNetwork("./Resources/banknote_train.json", 10, 0.01)
     # test_neural = NeuralNetwork("./Resources/banknote_test.json", 10, 0.01)
 
-    # train_neural = NeuralNetwork("./Resources/magic_train.json", 10, 0.01)
-    # test_neural = NeuralNetwork("./Resources/magic_test.json", 10, 0.01)
+    train_neural = NeuralNetwork("./Resources/magic_train.json", 10, 0.01)
+    test_neural = NeuralNetwork("./Resources/magic_test.json", 10, 0.01)
 
-    train_neural = NeuralNetwork("./Resources/heart_train.json", 20, 0.05)
-    test_neural = NeuralNetwork("./Resources/heart_test.json", 20, 0.05)
+    # train_neural = NeuralNetwork("./Resources/heart_train.json", 20, 0.05)
+    # test_neural = NeuralNetwork("./Resources/heart_test.json", 20, 0.05)
 
     train_neural.load_and_init_dataset()
     test_neural.load_and_init_dataset()

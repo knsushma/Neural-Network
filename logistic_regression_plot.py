@@ -150,9 +150,8 @@ if __name__ == '__main__':
     input_units_size = len(train_neural.flatten(train_neural.label_types))
     train_neural.weights = np.random.uniform(low=-0.01, high=0.01, size=(1, input_units_size+1)).tolist()[0]
 
-    max_epoch = 20
+    max_epoch = 30
     for e_max in range(1, max_epoch+1):
-        for e in range(1, max_epoch+1):
-            train_neural.train_model(e)
+        train_neural.train_model(e_max)
         train_neural.prediction_on_testdate(e_max, train_neural)
         train_neural.prediction_on_testdate(e_max, test_neural)
