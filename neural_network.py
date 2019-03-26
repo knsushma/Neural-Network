@@ -18,8 +18,6 @@ class NeuralNetwork:
         self.shape = (0, 0)
         self.epochs = epochs
         self.num_of_hidden_units = hidden_units
-        self.hidden_units_output = list([1])
-        self.neural_output = 0.0
         self.learning_rate = learning_rate
 
 
@@ -51,14 +49,14 @@ class NeuralNetwork:
         if (len(categorical_indices)):
             for index in categorical_indices:
                 for row_index, row in enumerate(self.std_dataset):
-                    self.std_dataset[row_index, index] = np.isin(self.features[index][1], self.dataset[row_index, index]).astype(int).tolist()
+                    self.std_dataset[row_index, index] = np.isin(self.features[index][1], self.std_dataset[row_index, index]).astype(int).tolist()
                 for row_index, row in enumerate(dataset_obj.std_dataset):
-                    dataset_obj.std_dataset[row_index, index] = np.isin(self.features[index][1], dataset_obj.dataset[row_index, index]).astype(int).tolist()
+                    dataset_obj.std_dataset[row_index, index] = np.isin(self.features[index][1], dataset_obj.std_dataset[row_index, index]).astype(int).tolist()
 
         if (len(numeric_indices)):
             self.compute_mean_and_sd(self.std_dataset[:, numeric_indices].astype(float))
-            self.std_dataset[:,numeric_indices] = (self.dataset[:,numeric_indices].astype(float) - self.mean) / self.sd
-            dataset_obj.std_dataset[:,numeric_indices] = (dataset_obj.dataset[:,numeric_indices].astype(float) - self.mean) / self.sd
+            self.std_dataset[:,numeric_indices] = (self.std_dataset[:,numeric_indices].astype(float) - self.mean) / self.sd
+            dataset_obj.std_dataset[:,numeric_indices] = (dataset_obj.std_dataset[:,numeric_indices].astype(float) - self.mean) / self.sd
 
         return dataset_obj
 
@@ -67,37 +65,33 @@ class NeuralNetwork:
         cross_entropy_error = 0.0
         corrects = 0
         for row_index, row in enumerate(self.std_dataset):
+
             if (row[-1] == self.label_class[1]):
                 y = 1
             else:
                 y = 0
             row_attributes = self.flatten(row[0:-1])
+            hidden_neurals_output = list([1])
             for weight_index, input_layer_weights in enumerate(self.w_i_h):
-                hidden_neural_output = self.find_neural_net_output(input_layer_weights, row_attributes)
-                if (len(self.hidden_units_output)-1>weight_index):
-                    self.hidden_units_output[weight_index + 1] = (1.0 / (1 + math.exp(-hidden_neural_output)))
-                else:
-                    self.hidden_units_output.append(1.0 / (1 + math.exp(-hidden_neural_output)))
+                hidden_neural_w_i_dot_product = np.dot(input_layer_weights, row_attributes)
+                hidden_neurals_output.append((1.0 / (1 + math.exp(-hidden_neural_w_i_dot_product))))
 
-            final_output = self.find_neural_net_output(self.w_h_o, self.hidden_units_output)
-            sigmoid_activation_value = (1.0 / (1 + math.exp(-final_output)))
+            w_o_dot_product = np.dot(self.w_h_o, hidden_neurals_output)
+            sigmoid_activation_value = (1.0 / (1 + math.exp(-w_o_dot_product)))
 
             if ((sigmoid_activation_value >= 0.5 and y==1) or  (sigmoid_activation_value < 0.5 and y==0)):
                 corrects += 1
             cross_entropy_error += (-1.0 * y * math.log(sigmoid_activation_value) - (1.0-y) * math.log(1-sigmoid_activation_value))
 
-            delta_k = y - sigmoid_activation_value
-            self.neural_output = (y - sigmoid_activation_value)
+            error = y - sigmoid_activation_value
             for hidden_layer_index,w_i_h in enumerate(self.w_i_h):
-                output = self.hidden_units_output[hidden_layer_index+1]
-                weighted_delta_sum = delta_k * self.w_h_o[hidden_layer_index+1]
-                delta = output * (1 - output) * weighted_delta_sum
+                output = hidden_neurals_output[hidden_layer_index+1]
+                delta = output * (1 - output) * error * self.w_h_o[hidden_layer_index+1]
                 for index in range(len(w_i_h)):
                     self.w_i_h[hidden_layer_index][index] += (self.learning_rate * delta * row_attributes[index])
 
-            for index,output in enumerate(self.hidden_units_output):
-                gradient = (y - sigmoid_activation_value) * output
-                self.w_h_o[index] += self.learning_rate * gradient
+            for index,output in enumerate(hidden_neurals_output):
+                self.w_h_o[index] += self.learning_rate * (y - sigmoid_activation_value) * output
 
         print("{0} {1:.12f} {2} {3}".format(epoch, cross_entropy_error, corrects, (self.shape[0]-corrects)))
 
@@ -110,15 +104,13 @@ class NeuralNetwork:
         label_list = self.get_binary_label_list(test_obj.std_dataset[:, -1])
         for index,row in enumerate(test_obj.std_dataset):
             row_attributes = self.flatten(row[0:-1])
-
+            hidden_neurals_output = list([1])
             for weight_index, input_layer_weights in enumerate(self.w_i_h):
-                hidden_neural_output = self.find_neural_net_output(input_layer_weights, row_attributes)
-                if (len(self.hidden_units_output)-1>weight_index):
-                    self.hidden_units_output[weight_index+1] = 1.0 / (1 + math.exp(-hidden_neural_output))
-                else:
-                    self.hidden_units_output.append(1.0 / (1 + math.exp(-hidden_neural_output)))
-            final_output = self.find_neural_net_output(self.w_h_o, self.hidden_units_output)
-            sigmoid_activation_value = (1.0 / (1 + math.exp(-final_output)))
+                hidden_neural_w_i_dot_product = np.dot(input_layer_weights, row_attributes)
+                hidden_neurals_output.append((1.0 / (1 + math.exp(-hidden_neural_w_i_dot_product))))
+
+            w_o_dot_product = np.dot(self.w_h_o, hidden_neurals_output)
+            sigmoid_activation_value = (1.0 / (1 + math.exp(-w_o_dot_product)))
 
             actual_class = label_list[index]
             predicted_class = int(sigmoid_activation_value >= 0.5)
@@ -131,9 +123,11 @@ class NeuralNetwork:
             print("{0:.12f} {1} {2}".format(sigmoid_activation_value, predicted_class, actual_class))
         print("{0} {1}".format(corrects, (test_obj.shape[0]-corrects)))
 
-        precision = TP / (TP + FP)
-        recall = TP / (np.sum(label_list))
-        F1_score = (2 * precision * recall) / (precision + recall)
+        F1_score = 0.0
+        if (TP + FP != 0):
+            precision = TP / (TP + FP)
+            recall = TP / (np.sum(label_list))
+            F1_score = (2 * precision * recall) / (precision + recall)
         print("{0:.12f}".format(F1_score))
 
 
@@ -146,18 +140,6 @@ class NeuralNetwork:
                 label_list.append(1)
 
         return label_list
-
-    def find_neural_net_output(self, weights, x_attributes):
-        sum = 0.0
-        for index in range(len(x_attributes)):
-            sum += (weights[index]) * (x_attributes[index])
-        return sum
-
-    def sum_on_weighted_delta(self, delta_k, w_h_o):
-        sum = 0.0
-        for index,weight in enumerate(w_h_o):
-            sum += delta_k*weight
-        return sum
 
     def add_biased_unit(self):
         add_one_bias = np.ones((self.shape[0], 1))
@@ -175,14 +157,14 @@ class NeuralNetwork:
 
 if __name__ == '__main__':
     np.random.seed(0)
-    # train_neural = NeuralNetwork("./Resources/banknote_train.json", 0.01, 5, 10)
-    # test_neural = NeuralNetwork("./Resources/banknote_test.json", 0.01, 5, 10)
+    train_neural = NeuralNetwork("./Resources/banknote_train.json", 0.01, 5, 10)
+    test_neural = NeuralNetwork("./Resources/banknote_test.json", 0.01, 5, 10)
 
     # train_neural = NeuralNetwork("./Resources/magic_train.json", 0.01, 10, 5)
     # test_neural = NeuralNetwork("./Resources/magic_test.json", 0.01, 10, 5)
 
-    train_neural = NeuralNetwork("./Resources/heart_train.json", 0.05, 7, 20)
-    test_neural = NeuralNetwork("./Resources/heart_test.json", 0.05, 7, 20)
+    # train_neural = NeuralNetwork("./Resources/heart_train.json", 0.05, 7, 20)
+    # test_neural = NeuralNetwork("./Resources/heart_test.json", 0.05, 7, 20)
 
     train_neural.load_and_init_dataset()
     test_neural.load_and_init_dataset()
