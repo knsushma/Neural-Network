@@ -1,9 +1,10 @@
 import numpy as np
 import json
 import math
+import sys
 
 class NeuralNetwork:
-    def __init__(self, inputFileName, epoch, learning_rate):
+    def __init__(self, learning_rate, max_epoch, inputFileName):
         self.input_file = inputFileName
         self.features = []
         self.dataset = [0][0]
@@ -15,7 +16,7 @@ class NeuralNetwork:
         self.sd = []
         self.weights = []
         self.shape = (0, 0)
-        self.epoch = epoch
+        self.max_epoch = max_epoch
         self.learning_rate = learning_rate
 
     def load_and_init_dataset(self):
@@ -126,14 +127,18 @@ class NeuralNetwork:
 
 if __name__ == '__main__':
     np.random.seed(0)
-    train_neural = NeuralNetwork("./Resources/banknote_train.json", 10, 0.01)
-    test_neural = NeuralNetwork("./Resources/banknote_test.json", 10, 0.01)
 
-    # train_neural = NeuralNetwork("./Resources/magic_train.json", 10, 0.01)
-    # test_neural = NeuralNetwork("./Resources/magic_test.json", 10, 0.01)
+    if (len(sys.argv)<5):
+        print("Please pass 4 arguments. 1) Learning Rate 2) Epochs 3) Training File Path, 4) Testing File path ")
+        sys.exit(1)
 
-    # train_neural = NeuralNetwork("./Resources/heart_train.json", 20, 0.05)
-    # test_neural = NeuralNetwork("./Resources/heart_test.json", 20, 0.05)
+    learning_rate = float(sys.argv[1])
+    max_epoch = int(sys.argv[2])
+    train_file = sys.argv[3]
+    test_file = sys.argv[4]
+
+    train_neural = NeuralNetwork(learning_rate, max_epoch, train_file)
+    test_neural = NeuralNetwork(learning_rate, max_epoch, test_file)
 
     train_neural.load_and_init_dataset()
     test_neural.load_and_init_dataset()
@@ -145,7 +150,7 @@ if __name__ == '__main__':
     input_units_size = len(train_neural.flatten(train_neural.label_types))
     train_neural.weights = np.random.uniform(low=-0.01, high=0.01, size=(1, input_units_size+1)).tolist()[0]
 
-    for e in range(1, train_neural.epoch+1):
+    for e in range(1, train_neural.max_epoch + 1):
         train_neural.train_model(e)
 
     train_neural.prediction_on_testdate(test_neural)

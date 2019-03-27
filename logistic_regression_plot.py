@@ -1,10 +1,12 @@
 import numpy as np
 import json
 import math
+import matplotlib.pyplot as plt
+import sys
 
 
 class NeuralNetwork:
-    def __init__(self, inputFileName, epoch, learning_rate):
+    def __init__(self, learning_rate, max_epoch, inputFileName):
         self.input_file = inputFileName
         self.features = []
         self.dataset = [0][0]
@@ -16,7 +18,7 @@ class NeuralNetwork:
         self.sd = []
         self.weights = []
         self.shape = (0, 0)
-        self.epoch = epoch
+        self.max_epoch = max_epoch
         self.learning_rate = learning_rate
 
     def load_and_init_dataset(self):
@@ -103,7 +105,8 @@ class NeuralNetwork:
             precision = TP / (TP + FP)
             recall = TP / (np.sum(label_list))
             F1_score = (2 * precision * recall) / (precision + recall)
-        print("{0} {1:.12f}".format(epoch, F1_score))
+        #print("{0} {1:.12f}".format(epoch, F1_score))
+        return  F1_score
 
     def get_binary_label_list(self, dataset_labels):
         label_list = []
@@ -129,16 +132,34 @@ class NeuralNetwork:
         return newlist
 
 
+    def plot_F1_score_curve(self, x1, y1, y2):
+        fig, ax = plt.subplots()
+        textstr = "Max Epoch: {0}\nLearning Rate: {1}\nDataset: Heart".format(self.max_epoch, self.learning_rate)
+        plt.gcf().text(0.6, 0.3, textstr, fontsize=10)
+        ax.plot(x1, y1, color='blue', marker='', label='Train Dataset')
+        ax.plot(x1, y2, color='red', marker='', label='Test Dataset')
+        handles, labels = ax.get_legend_handles_labels()
+        ax.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.8, 0.6))
+        ax.set_title("Effect of Epochs on F1 Score")
+        ax.set_xlabel('Number of Epochs')
+        ax.set_ylabel('F1 Score')
+
+        plt.show()
+
 if __name__ == '__main__':
     np.random.seed(0)
-    # train_neural = NeuralNetwork("./Resources/banknote_train.json", 10, 0.01)
-    # test_neural = NeuralNetwork("./Resources/banknote_test.json", 10, 0.01)
 
-    # train_neural = NeuralNetwork("./Resources/magic_train.json", 10, 0.01)
-    # test_neural = NeuralNetwork("./Resources/magic_test.json", 10, 0.01)
+    if (len(sys.argv)<5):
+        print("Please pass 4 arguments. 1) Learning Rate 2) Epochs 3) Training File Path, 4) Testing File path ")
+        sys.exit(1)
 
-    train_neural = NeuralNetwork("./Resources/heart_train.json", 30, 0.05)
-    test_neural = NeuralNetwork("./Resources/heart_test.json", 30, 0.05)
+    learning_rate = float(sys.argv[1])
+    max_epoch = int(sys.argv[2])
+    train_file = sys.argv[3]
+    test_file = sys.argv[4]
+
+    train_neural = NeuralNetwork(learning_rate, max_epoch, train_file)
+    test_neural = NeuralNetwork(learning_rate, max_epoch, test_file)
 
     train_neural.load_and_init_dataset()
     test_neural.load_and_init_dataset()
@@ -153,10 +174,12 @@ if __name__ == '__main__':
     input_units_size = len(train_neural.flatten(train_neural.label_types))
     train_neural.weights = np.random.uniform(low=-0.01, high=0.01, size=(1, input_units_size + 1)).tolist()[0]
 
-    max_epoch = 30
+    train_f1_score = []
+    test_f1_score = []
     for e_max in range(1, max_epoch+1):
         for e in range(1, e_max+1):
             train_neural.train_model(e_max)
-        #train_neural.prediction_on_testdate(e_max, train_neural)
-        #train_neural.prediction_on_testdate(e_max, test_neural)
-        #print()
+        train_f1_score.append(train_neural.prediction_on_testdate(e_max, train_neural))
+        test_f1_score.append(train_neural.prediction_on_testdate(e_max, test_neural))
+
+    train_neural.plot_F1_score_curve(list(range(1,max_epoch+1)), train_f1_score, test_f1_score)
