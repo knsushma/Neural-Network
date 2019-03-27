@@ -134,7 +134,7 @@ class NeuralNetwork:
 
     def plot_F1_score_curve(self, x1, y1, y2):
         fig, ax = plt.subplots()
-        textstr = "Max Epoch: {0}\nLearning Rate: {1}\nDataset: Heart".format(self.max_epoch, self.learning_rate)
+        textstr = "Max Epoch: {0}\nLearning Rate: {1}\nDataset: Magic".format(self.max_epoch, self.learning_rate)
         plt.gcf().text(0.6, 0.3, textstr, fontsize=10)
         ax.plot(x1, y1, color='blue', marker='', label='Train Dataset')
         ax.plot(x1, y2, color='red', marker='', label='Test Dataset')
